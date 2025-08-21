@@ -1,12 +1,13 @@
 from flask import Flask, render_template, send_from_directory
 
-app = Flask(__name__)
+# 指定 static_folder & template_folder
+app = Flask(__name__, static_folder="static", template_folder="templates")
 
 @app.route("/")
 def index():
     return render_template("index.html")
 
-# Allow the service worker to be served at the expected path
+# 保证 service-worker.js 能正确加载
 @app.route('/static/<path:filename>')
 def static_files(filename):
     return send_from_directory('static', filename)
