@@ -135,7 +135,7 @@
       <div id="recentList" class="recent-list"></div>
       <div class="pagination-buttons">
         <button id="prevPage" class="btn secondary">上一页</button>
-        <span id="pageInfo"></span>
+        <span id="pageInfo">第 1 页</span>
         <button id="nextPage" class="btn secondary">下一页</button>
       </div>
     </section>
@@ -159,8 +159,33 @@
         const input = document.getElementById("bet");
         if (input) {
           input.value = val;
+          input.dispatchEvent(new Event("input")); // 触发事件，保证数据更新
         }
       });
+    });
+
+    // 分页逻辑
+    let currentPage = 1;
+    let pageSize = 20;
+    function updatePageInfo(totalPages) {
+      document.getElementById("pageInfo").textContent = `第 ${currentPage} 页 / 共 ${totalPages} 页`;
+    }
+    document.getElementById("pageSize").addEventListener("change", e => {
+      pageSize = parseInt(e.target.value);
+      currentPage = 1;
+      if (window.renderRecentList) window.renderRecentList();
+    });
+    document.getElementById("prevPage").addEventListener("click", () => {
+      if (currentPage > 1) {
+        currentPage--;
+        if (window.renderRecentList) window.renderRecentList();
+      }
+    });
+    document.getElementById("nextPage").addEventListener("click", () => {
+      if (window.totalPages && currentPage < window.totalPages) {
+        currentPage++;
+        if (window.renderRecentList) window.renderRecentList();
+      }
     });
   </script>
 </body>

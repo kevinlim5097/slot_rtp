@@ -6,8 +6,8 @@ let spins = []; // {bet, win, ts}
 let balanceSeries = []; // cumulative balance after each spin
 
 // 分页状态
-let recentPageSize = 20;
-let recentPage = 1;
+let currentPage = 1;
+let pageSize = 20;
 
 // Elements
 const rtpEl = document.getElementById("rtp");
@@ -29,7 +29,11 @@ const pAt5000El = document.getElementById("pAt5000");
 const pRemainTo5000El = document.getElementById("pRemainTo5000");
 
 const recentListEl = document.getElementById("recentList");
-const paginationEl = document.getElementById("paginationControls");
+const prevPageBtn = document.getElementById("prevPage");
+const nextPageBtn = document.getElementById("nextPage");
+const pageInfoEl = document.getElementById("pageInfo");
+const pageSizeSelect = document.getElementById("pageSize");
+
 const canvas = document.getElementById("trendCanvas");
 const ctx = canvas.getContext("2d");
 
@@ -77,7 +81,6 @@ function clearAll() {
 function probAtLeastOneJackpot(N, spinsCount) {
   N = clampN(Number(N), 1);
   spinsCount = clampN(Number(spinsCount), 0);
-  // P = 1 - (1 - 1/N)^spinsCount
   const p = 1 - Math.pow(1 - 1 / N, spinsCount);
   return Math.max(0, Math.min(1, p));
 }
@@ -113,24 +116,28 @@ function refresh() {
   drawChart();
 }
 
+// Recent list rendering with pagination
 function renderRecent() {
   const total = spins.length;
   if (total === 0) {
     recentListEl.innerHTML = '<div class="hint">暂无记录</div>';
-    paginationEl.innerHTML = "";
+    pageInfoEl.textContent = "第 0 页 / 共 0 页";
+    prevPageBtn.disabled = true;
+    nextPageBtn.disabled = true;
     return;
   }
 
-  const totalPages = Math.ceil(total / recentPageSize);
-  if (recentPage > totalPages) recentPage = totalPages;
+  const totalPages = Math.ceil(total / pageSize);
+  if (currentPage > totalPages) currentPage = totalPages;
+  window.totalPages = totalPages; // 全局存储总页数
 
-  const start = total - (recentPage * recentPageSize);
-  const end = total - ((recentPage - 1) * recentPageSize);
+  const start = total - (currentPage * pageSize);
+  const end = total - ((currentPage - 1) * pageSize);
   const pageSpins = spins.slice(Math.max(0, start), end).reverse();
 
   recentListEl.innerHTML = "";
   pageSpins.forEach((r, i) => {
-    const idx = total - ((recentPage - 1) * recentPageSize) - i;
+    const idx = total - ((currentPage - 1) * pageSize) - i;
     const row = document.createElement("div");
     row.className = "rec-row";
     const dt = new Date(r.ts);
@@ -145,27 +152,9 @@ function renderRecent() {
     recentListEl.appendChild(row);
   });
 
-  // Pagination controls
-  paginationEl.innerHTML = `
-    <button ${recentPage <= 1 ? "disabled" : ""} onclick="changePage(-1)">上一页</button>
-    <span>第 ${recentPage} / ${totalPages} 页</span>
-    <button ${recentPage >= totalPages ? "disabled" : ""} onclick="changePage(1)">下一页</button>
-    <select id="pageSizeSelect">
-      <option value="20" ${recentPageSize === 20 ? "selected" : ""}>20条/页</option>
-      <option value="50" ${recentPageSize === 50 ? "selected" : ""}>50条/页</option>
-    </select>
-  `;
-
-  document.getElementById("pageSizeSelect").addEventListener("change", (e) => {
-    recentPageSize = Number(e.target.value);
-    recentPage = 1;
-    refresh();
-  });
-}
-
-function changePage(delta) {
-  recentPage += delta;
-  refresh();
+  pageInfoEl.textContent = `第 ${currentPage} 页 / 共 ${totalPages} 页`;
+  prevPageBtn.disabled = currentPage <= 1;
+  nextPageBtn.disabled = currentPage >= totalPages;
 }
 
 function buildBalanceSeries() {
@@ -182,25 +171,20 @@ function drawChart() {
   const h = canvas.height;
   ctx.clearRect(0, 0, w, h);
 
-  // Axes padding
   const padL = 50, padR = 20, padT = 10, padB = 30;
 
-  // Axes
   ctx.save();
   ctx.strokeStyle = "#334155";
   ctx.lineWidth = 1;
-  // X axis
   ctx.beginPath();
   ctx.moveTo(padL, h - padB);
   ctx.lineTo(w - padR, h - padB);
   ctx.stroke();
-  // Y axis
   ctx.beginPath();
   ctx.moveTo(padL, padT);
   ctx.lineTo(padL, h - padB);
   ctx.stroke();
 
-  // No data
   if (balanceSeries.length === 0) {
     ctx.fillStyle = "#94a3b8";
     ctx.fillText("暂无数据", padL + 10, (h - padB) / 2);
@@ -208,7 +192,6 @@ function drawChart() {
     return;
   }
 
-  // Scale
   const xs = balanceSeries.map((_, i) => i + 1);
   const ys = balanceSeries;
 
@@ -222,11 +205,9 @@ function drawChart() {
   const xToPx = (x) => padL + (x - xMin) / (xMax - xMin || 1) * plotW;
   const yToPx = (y) => (h - padB) - (y - yMin) / (yMax - yMin || 1) * plotH;
 
-  // Grid lines
   ctx.strokeStyle = "#233049";
   ctx.lineWidth = 1;
   ctx.setLineDash([4, 4]);
-  // Y grid at 0
   const y0 = yToPx(0);
   ctx.beginPath();
   ctx.moveTo(padL, y0);
@@ -234,7 +215,6 @@ function drawChart() {
   ctx.stroke();
   ctx.setLineDash([]);
 
-  // Line
   ctx.strokeStyle = "#60a5fa";
   ctx.lineWidth = 2;
   ctx.beginPath();
@@ -244,7 +224,6 @@ function drawChart() {
   }
   ctx.stroke();
 
-  // Last point
   const lastX = xToPx(xs[xs.length - 1]);
   const lastY = yToPx(ys[ys.length - 1]);
   ctx.fillStyle = "#93c5fd";
@@ -252,7 +231,6 @@ function drawChart() {
   ctx.arc(lastX, lastY, 3, 0, Math.PI * 2);
   ctx.fill();
 
-  // Labels
   ctx.fillStyle = "#94a3b8";
   ctx.font = "12px system-ui";
   ctx.fillText("局数", (w - padR) - 24, (h - padB) + 20);
@@ -274,7 +252,6 @@ addSpinBtn.addEventListener("click", () => {
     return;
   }
   addSpin(bet, win);
-  // Reset win to 0 for speed
   winEl.value = "0";
 });
 
@@ -285,10 +262,29 @@ rtpEl.addEventListener("input", refresh);
 jackpotNEl.addEventListener("input", refresh);
 
 // 绑定预设下注金额按钮
-document.querySelectorAll(".preset-bet").forEach(btn => {
+document.querySelectorAll(".bet-btn").forEach(btn => {
   btn.addEventListener("click", () => {
-    betEl.value = btn.dataset.value; // 点击时写入 input
+    betEl.value = btn.dataset.val;
   });
+});
+
+// 分页按钮事件
+prevPageBtn.addEventListener("click", () => {
+  if (currentPage > 1) {
+    currentPage--;
+    renderRecent();
+  }
+});
+nextPageBtn.addEventListener("click", () => {
+  if (currentPage < window.totalPages) {
+    currentPage++;
+    renderRecent();
+  }
+});
+pageSizeSelect.addEventListener("change", (e) => {
+  pageSize = parseInt(e.target.value);
+  currentPage = 1;
+  renderRecent();
 });
 
 // Init
