@@ -1,0 +1,9 @@
+{
+  "name": "老虎机风险模拟器",
+  "short_name": "SlotRisk",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0b1220",
+  "theme_color": "#0ea5e9",
+  "icons": []
+}

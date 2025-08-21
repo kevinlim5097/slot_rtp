@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>老虎机风险模拟器 PWA</title>
+  <link rel="manifest" href="/static/manifest.json" />
+  <meta name="theme-color" content="#0ea5e9" />
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+  <header class="app-header">
+    <h1>🎰 老虎机风险模拟器</h1>
+    <p class="subtitle">记录每局 & 估算大奖概率 · PWA</p>
+  </header>
+
+  <main class="container">
+    <section class="card">
+      <h2 class="card-title">参数设置</h2>
+      <div class="grid two">
+        <div class="field">
+          <label>机台理论 RTP（%）</label>
+          <input id="rtp" type="number" step="0.1" value="95" />
+        </div>
+        <div class="field">
+          <label>大奖概率（1/N）中的 N</label>
+          <input id="jackpotN" type="number" step="1" value="5000" />
+        </div>
+      </div>
+      <p class="hint">说明：每一局命中大奖的概率为 <code>1 / N</code>。RTP用于亏损/回报的期望估计。</p>
+    </section>
+
+    <section class="card">
+      <h2 class="card-title">新增一局</h2>
+      <div class="grid three">
+        <div class="field">
+          <label>下注金额</label>
+          <input id="bet" type="number" step="0.01" value="1" />
+        </div>
+        <div class="field">
+          <label>本局中奖金额</label>
+          <input id="win" type="number" step="0.01" value="0" />
+        </div>
+        <div class="field buttons-inline">
+          <button id="quickZero" type="button" class="btn secondary">快速填 0</button>
+          <button id="addSpin" type="button" class="btn primary">提交本局</button>
+        </div>
+      </div>
+      <div class="actions-row">
+        <button id="undoLast" class="btn">撤销上次</button>
+        <button id="clearAll" class="btn danger">清空全部</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2 class="card-title">统计结果</h2>
+      <div class="stats-grid">
+        <div class="stat">
+          <div class="stat-label">总局数</div>
+          <div class="stat-value" id="totalSpins">0</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">总下注 (RM)</div>
+          <div class="stat-value" id="totalBet">0.00</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">总中奖 (RM)</div>
+          <div class="stat-value" id="totalWin">0.00</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">实际 RTP</div>
+          <div class="stat-value" id="actualRTP">0%</div>
+        </div>
+      </div>
+
+      <div class="prob-cards">
+        <div class="prob-card">
+          <div class="prob-title">截至当前，至少出 1 次大奖的概率</div>
+          <div class="prob-value" id="pSoFar">0%</div>
+          <div class="prob-desc">计算公式：<code>1 - (1 - 1/N) ^ 已玩局数</code></div>
+        </div>
+        <div class="prob-card">
+          <div class="prob-title">总共 5,000 局时，至少 1 次大奖的概率</div>
+          <div class="prob-value" id="pAt5000">0%</div>
+          <div class="prob-desc">公式：<code>1 - (1 - 1/N) ^ 5000</code></div>
+        </div>
+        <div class="prob-card">
+          <div class="prob-title">从现在到第 5,000 局内，命中 ≥1 次的概率</div>
+          <div class="prob-value" id="pRemainTo5000">0%</div>
+          <div class="prob-desc">在“尚未中”的前提下：<code>1 - (1 - 1/N) ^ max(0, 5000 - 已玩局数)</code></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2 class="card-title">盈亏趋势（余额曲线）</h2>
+      <canvas id="trendCanvas" width="1200" height="400" class="chart"></canvas>
+      <p class="hint">说明：每次提交后按本局实际输赢更新余额；图表为本地渲染，无需外部库。</p>
+    </section>
+
+    <section class="card">
+      <h2 class="card-title">近期记录（最新 20 条）</h2>
+      <div id="recentList" class="recent-list"></div>
+    </section>
+  </main>
+
+  <footer class="app-footer">
+    <small>本应用仅用于统计与概率估算，不提供任何形式的赌博建议。</small>
+  </footer>
+
+  <script src="/static/app.js"></script>
+  <script>
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/static/service-worker.js");
+    }
+  </script>
+</body>
+</html>
