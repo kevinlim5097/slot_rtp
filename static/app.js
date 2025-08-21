@@ -5,6 +5,10 @@ const KEY = "slot_spins_v1";
 let spins = []; // {bet, win, ts}
 let balanceSeries = []; // cumulative balance after each spin
 
+// 分页状态
+let recentPageSize = 20;
+let recentPage = 1;
+
 // Elements
 const rtpEl = document.getElementById("rtp");
 const jackpotNEl = document.getElementById("jackpotN");
@@ -25,6 +29,7 @@ const pAt5000El = document.getElementById("pAt5000");
 const pRemainTo5000El = document.getElementById("pRemainTo5000");
 
 const recentListEl = document.getElementById("recentList");
+const paginationEl = document.getElementById("paginationControls");
 const canvas = document.getElementById("trendCanvas");
 const ctx = canvas.getContext("2d");
 
@@ -109,27 +114,58 @@ function refresh() {
 }
 
 function renderRecent() {
-  const last = spins.slice(-20).reverse();
-  if (last.length === 0) {
+  const total = spins.length;
+  if (total === 0) {
     recentListEl.innerHTML = '<div class="hint">暂无记录</div>';
+    paginationEl.innerHTML = "";
     return;
   }
+
+  const totalPages = Math.ceil(total / recentPageSize);
+  if (recentPage > totalPages) recentPage = totalPages;
+
+  const start = total - (recentPage * recentPageSize);
+  const end = total - ((recentPage - 1) * recentPageSize);
+  const pageSpins = spins.slice(Math.max(0, start), end).reverse();
+
   recentListEl.innerHTML = "";
-  last.forEach((r, i) => {
-    const idx = spins.length - i;
+  pageSpins.forEach((r, i) => {
+    const idx = total - ((recentPage - 1) * recentPageSize) - i;
     const row = document.createElement("div");
     row.className = "rec-row";
     const dt = new Date(r.ts);
     const timeStr = dt.toLocaleString();
     const pnl = (Number(r.win) || 0) - (Number(r.bet) || 0);
     row.innerHTML = `
-      <div class="mono">#${spins.length - i}</div>
+      <div class="mono">#${idx}</div>
       <div>时间：${timeStr}</div>
       <div>下注：RM ${fmtRM(r.bet)}</div>
       <div>中奖：RM ${fmtRM(r.win)} <span style="opacity:.7">（盈亏：RM ${fmtRM(pnl)}）</span></div>
     `;
     recentListEl.appendChild(row);
   });
+
+  // Pagination controls
+  paginationEl.innerHTML = `
+    <button ${recentPage <= 1 ? "disabled" : ""} onclick="changePage(-1)">上一页</button>
+    <span>第 ${recentPage} / ${totalPages} 页</span>
+    <button ${recentPage >= totalPages ? "disabled" : ""} onclick="changePage(1)">下一页</button>
+    <select id="pageSizeSelect">
+      <option value="20" ${recentPageSize === 20 ? "selected" : ""}>20条/页</option>
+      <option value="50" ${recentPageSize === 50 ? "selected" : ""}>50条/页</option>
+    </select>
+  `;
+
+  document.getElementById("pageSizeSelect").addEventListener("change", (e) => {
+    recentPageSize = Number(e.target.value);
+    recentPage = 1;
+    refresh();
+  });
+}
+
+function changePage(delta) {
+  recentPage += delta;
+  refresh();
 }
 
 function buildBalanceSeries() {
@@ -236,7 +272,7 @@ addSpinBtn.addEventListener("click", () => {
   if (!(bet > 0) || !(win >= 0)) {
     alert("请输入有效的下注与中奖金额（中奖可为 0）。");
     return;
-    }
+  }
   addSpin(bet, win);
   // Reset win to 0 for speed
   winEl.value = "0";
@@ -247,6 +283,13 @@ clearAllBtn.addEventListener("click", clearAll);
 
 rtpEl.addEventListener("input", refresh);
 jackpotNEl.addEventListener("input", refresh);
+
+// 绑定预设下注金额按钮
+document.querySelectorAll(".preset-bet").forEach(btn => {
+  btn.addEventListener("click", () => {
+    betEl.value = btn.dataset.value; // 点击时写入 input
+  });
+});
 
 // Init
 load();

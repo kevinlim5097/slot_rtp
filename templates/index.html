@@ -46,6 +46,21 @@
         <div class="field">
           <label>下注金额</label>
           <input id="bet" type="number" step="0.01" value="1" />
+          <!-- 快捷按钮 -->
+          <div class="quick-buttons">
+            <div class="btn-group">
+              <button type="button" class="btn bet-btn" data-val="8.8">8.8</button>
+              <button type="button" class="btn bet-btn" data-val="17.6">17.6</button>
+              <button type="button" class="btn bet-btn" data-val="35.2">35.2</button>
+              <button type="button" class="btn bet-btn" data-val="44.0">44.0</button>
+            </div>
+            <div class="btn-group">
+              <button type="button" class="btn bet-btn" data-val="6.8">6.8</button>
+              <button type="button" class="btn bet-btn" data-val="13.6">13.6</button>
+              <button type="button" class="btn bet-btn" data-val="27.2">27.2</button>
+              <button type="button" class="btn bet-btn" data-val="34.0">34.0</button>
+            </div>
+          </div>
         </div>
         <div class="field">
           <label>本局中奖金额</label>
@@ -109,8 +124,20 @@
     </section>
 
     <section class="card">
-      <h2 class="card-title">近期记录（最新 20 条）</h2>
+      <h2 class="card-title">近期记录</h2>
+      <div class="pagination-controls">
+        <label for="pageSize">每页显示：</label>
+        <select id="pageSize">
+          <option value="20" selected>20</option>
+          <option value="50">50</option>
+        </select>
+      </div>
       <div id="recentList" class="recent-list"></div>
+      <div class="pagination-buttons">
+        <button id="prevPage" class="btn secondary">上一页</button>
+        <span id="pageInfo"></span>
+        <button id="nextPage" class="btn secondary">下一页</button>
+      </div>
     </section>
   </main>
 
@@ -124,6 +151,17 @@
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.register("{{ url_for('static', filename='service-worker.js') }}");
     }
+
+    // 绑定预设金额按钮点击事件
+    document.querySelectorAll(".bet-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const val = btn.getAttribute("data-val");
+        const input = document.getElementById("bet");
+        if (input) {
+          input.value = val;
+        }
+      });
+    });
   </script>
 </body>
 </html>

@@ -35,3 +35,32 @@
 .rec-row .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;color:#93c5fd}
 .app-footer{padding:20px;text-align:center;color:#94a3b8}
 code{background:#0b1220;border:1px solid #1f2a44;padding:2px 6px;border-radius:8px}
+.quick-buttons {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.btn-group {
+  display: flex;
+  gap: 6px;
+}
+.pagination-controls {
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #a5b4fc;
+}
+.pagination-buttons {
+  margin-top: 8px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+}
+#pageInfo {
+  font-size: 14px;
+  color: #e2e8f0;
+}
